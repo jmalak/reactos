@@ -245,7 +245,7 @@ DWORD FASTCALL get_input_codepage( void )
     if (!ret) cp = CP_ACP;
     return cp;
 }
-                                                  
+
 static WPARAM FASTCALL map_wparam_char_WtoA( WPARAM wParam, DWORD len )
 {
     WCHAR wch = wParam;
@@ -253,7 +253,7 @@ static WPARAM FASTCALL map_wparam_char_WtoA( WPARAM wParam, DWORD len )
     DWORD cp = get_input_codepage();
 
     len = WideCharToMultiByte( cp, 0, &wch, 1, (LPSTR)ch, len, NULL, NULL );
-    if (len == 2)      
+    if (len == 2)
        return MAKEWPARAM( (ch[0] << 8) | ch[1], HIWORD(wParam) );
     else
     return MAKEWPARAM( ch[0], HIWORD(wParam) );
@@ -743,9 +743,9 @@ MsgiAnsiToUnicodeMessage(HWND hwnd, LPMSG UnicodeMsg, LPMSG AnsiMsg)
 
     case WM_CHARTOITEM:
     case WM_MENUCHAR:
-    case WM_CHAR:   
+    case WM_CHAR:
     case WM_DEADCHAR:
-    case WM_SYSCHAR: 
+    case WM_SYSCHAR:
     case WM_SYSDEADCHAR:
     case EM_SETPASSWORDCHAR:
     case WM_IME_CHAR:
@@ -1139,14 +1139,14 @@ MsgiUnicodeToAnsiMessage(HWND hwnd, LPMSG AnsiMsg, LPMSG UnicodeMsg)
         }
 
       case WM_GETDLGCODE:
-        if (UnicodeMsg->lParam)   
+        if (UnicodeMsg->lParam)
         {
            MSG newmsg = *(MSG *)UnicodeMsg->lParam;
            switch(newmsg.message)
            {
               case WM_CHAR:
               case WM_DEADCHAR:
-              case WM_SYSCHAR: 
+              case WM_SYSCHAR:
               case WM_SYSDEADCHAR:
                 newmsg.wParam = map_wparam_char_WtoA( newmsg.wParam, 1 );
                 break;
@@ -1169,9 +1169,9 @@ MsgiUnicodeToAnsiMessage(HWND hwnd, LPMSG AnsiMsg, LPMSG UnicodeMsg)
         break;
 
       case WM_CHARTOITEM:
-      case WM_MENUCHAR:  
-      case WM_DEADCHAR:  
-      case WM_SYSCHAR:   
+      case WM_MENUCHAR:
+      case WM_DEADCHAR:
+      case WM_SYSCHAR:
       case WM_SYSDEADCHAR:
       case EM_SETPASSWORDCHAR:
           AnsiMsg->wParam = map_wparam_char_WtoA(UnicodeMsg->wParam,1);
@@ -1303,7 +1303,7 @@ MsgiUnicodeToAnsiReply(LPMSG AnsiMsg, LPMSG UnicodeMsg, LRESULT *Result)
       {
         DWORD len = AnsiMsg->wParam;// * 2;
         if (len)
-        { 
+        {
            if (*Result)
            {
               RtlMultiByteToUnicodeN( UBuffer, AnsiMsg->wParam*sizeof(WCHAR), &len, Buffer, strlen(Buffer)+1 );
@@ -1908,7 +1908,9 @@ CallWindowProcW(WNDPROC lpPrevWndFunc,
 /*
  * @implemented
  */
-LRESULT WINAPI
+LRESULT
+WINAPI
+DECLSPEC_HOTPATCH
 DispatchMessageA(CONST MSG *lpmsg)
 {
     LRESULT Ret = 0;
@@ -2000,7 +2002,9 @@ DispatchMessageA(CONST MSG *lpmsg)
 /*
  * @implemented
  */
-LRESULT WINAPI
+LRESULT
+WINAPI
+DECLSPEC_HOTPATCH
 DispatchMessageW(CONST MSG *lpmsg)
 {
     LRESULT Ret = 0;
@@ -2100,7 +2104,9 @@ IntConvertMsgToAnsi(LPMSG lpMsg)
 /*
  * @implemented
  */
-BOOL WINAPI
+BOOL
+WINAPI
+DECLSPEC_HOTPATCH
 GetMessageA(LPMSG lpMsg,
             HWND hWnd,
             UINT wMsgFilterMin,
@@ -2128,7 +2134,9 @@ GetMessageA(LPMSG lpMsg,
 /*
  * @implemented
  */
-BOOL WINAPI
+BOOL
+WINAPI
+DECLSPEC_HOTPATCH
 GetMessageW(LPMSG lpMsg,
             HWND hWnd,
             UINT wMsgFilterMin,
@@ -2191,7 +2199,9 @@ PeekMessageWorker( PMSG pMsg,
 /*
  * @implemented
  */
-BOOL WINAPI
+BOOL
+WINAPI
+DECLSPEC_HOTPATCH
 PeekMessageA(LPMSG lpMsg,
 	     HWND hWnd,
 	     UINT wMsgFilterMin,
@@ -2217,6 +2227,7 @@ PeekMessageA(LPMSG lpMsg,
  */
 BOOL
 WINAPI
+DECLSPEC_HOTPATCH
 PeekMessageW(
   LPMSG lpMsg,
   HWND hWnd,
@@ -2393,7 +2404,7 @@ SendMessageW(HWND Wnd,
 
       if ( Window != NULL &&
            Window->head.pti == ti &&
-          !ISITHOOKED(WH_CALLWNDPROC) && 	 
+          !ISITHOOKED(WH_CALLWNDPROC) &&
           !ISITHOOKED(WH_CALLWNDPROCRET) &&
           !(Window->state & WNDS_SERVERSIDEWINDOWPROC) )
       {
@@ -2457,7 +2468,7 @@ SendMessageA(HWND Wnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 
       if ( Window != NULL &&
            Window->head.pti == ti &&
-          !ISITHOOKED(WH_CALLWNDPROC) && 	 
+          !ISITHOOKED(WH_CALLWNDPROC) &&
           !ISITHOOKED(WH_CALLWNDPROCRET) &&
           !(Window->state & WNDS_SERVERSIDEWINDOWPROC) )
       {
@@ -2919,6 +2930,17 @@ User32CallWindowProcFromKernel(PVOID Arguments, ULONG ArgumentLength)
           return STATUS_INFO_LENGTH_MISMATCH;
         }
       KMMsg.lParam = (LPARAM) ((char *) CallbackArgs + sizeof(WINDOWPROC_CALLBACK_ARGUMENTS));
+     switch(KMMsg.message)
+     {
+        case WM_SIZING:
+        {
+           PRECT prect = (PRECT) KMMsg.lParam;
+           TRACE("WM_SIZING 1 t %d l %d r %d b %d\n",prect->top,prect->left,prect->right,prect->bottom);
+           break;
+        }
+        default:
+           break;
+     }
     }
   else
     {
@@ -2954,6 +2976,20 @@ User32CallWindowProcFromKernel(PVOID Arguments, ULONG ArgumentLength)
     {
     }
 
+  if (0 <= CallbackArgs->lParamBufferSize)
+  {
+     switch(KMMsg.message)
+     {
+        case WM_SIZING:
+        {
+           PRECT prect = (PRECT) KMMsg.lParam;
+           TRACE("WM_SIZING 2 t %d l %d r %d b %d\n",prect->top,prect->left,prect->right,prect->bottom);
+           break;
+        }
+        default:
+           break;
+     }
+  }
   return ZwCallbackReturn(CallbackArgs, ArgumentLength, STATUS_SUCCESS);
 }
 

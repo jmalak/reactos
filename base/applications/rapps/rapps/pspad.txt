@@ -1,4 +1,6 @@
-﻿; UTF-8
+; UTF-8
+; Polish translation by wojo664
+; Turkish translation by Erdem Ersoy (eersoy93) (erdemersoy@live.com)
 
 [Section]
 Name = PSPad
@@ -13,16 +15,20 @@ CDPath = none
 
 [Section.0407]
 Description = Ein Texteditor.
+URLSite = http://www.pspad.com/de/
 
 [Section.040a]
 Description = Un editor de text.
+URLSite = http://www.pspad.com/es/
 
 [Section.040c]
 Description = Un éditeur de texte.
 Size = 4,46 Mo
+URLSite = http://www.pspad.com/fr/
 
 [Section.0410]
 Description = Un editor di testo.
+URLSite = http://www.pspad.com/it/
 
 [Section.0413]
 Description = Een teksteditor.
@@ -37,9 +43,11 @@ Size = 4,46 Mo
 
 [Section.0419]
 Description = Текстовый редактор.
+URLSite = http://www.pspad.com/ru/
 
 [Section.041b]
 Description = Textový editor.
+URLSite = http://www.pspad.com/sk/
 
 [Section.041f]
 Licence = Ücretsiz

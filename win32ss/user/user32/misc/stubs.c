@@ -297,6 +297,7 @@ DefRawInputProc(
  */
 UINT
 WINAPI
+DECLSPEC_HOTPATCH
 GetRawInputBuffer(
     PRAWINPUT pData,
     PUINT pcbSize,
@@ -359,6 +360,7 @@ GetRegisteredRawInputDevices(
  */
 BOOL
 WINAPI
+DECLSPEC_HOTPATCH
 RegisterRawInputDevices(
     PCRAWINPUTDEVICE pRawInputDevices,
     UINT uiNumDevices,
@@ -471,15 +473,6 @@ BOOL WINAPI DdeGetQualityOfService(HWND hWnd, DWORD Reserved, PSECURITY_QUALITY_
 {
   UNIMPLEMENTED;
   return FALSE;
-}
-
-/*
- * @unimplemented
- */
-BOOL WINAPI SetProcessDPIAware(VOID)
-{
-    UNIMPLEMENTED;
-    return TRUE;
 }
 
 /*

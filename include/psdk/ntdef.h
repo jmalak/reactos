@@ -20,25 +20,23 @@
 
 #ifndef _NTDEF_
 #define _NTDEF_
+#pragma once
 
 /* Dependencies */
 #include <ctype.h>
 #include <basetsd.h>
+#include <guiddef.h>
 #include <excpt.h>
 #include <sdkddkver.h>
 #include <specstrings.h>
+#include <kernelspecs.h>
 
 // FIXME: Shouldn't be included!
 #include <stdarg.h>
 #include <string.h>
 
-/* Helper macro to enable gcc's extension.  */
-#ifndef __GNU_EXTENSION
-#ifdef __GNUC__
-#define __GNU_EXTENSION __extension__
-#else
-#define __GNU_EXTENSION
-#endif
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 /* Pseudo Modifiers for Input Parameters */
@@ -63,14 +61,9 @@
 #define CRITICAL
 #endif
 
+// FIXME: deprecated
 #ifndef FAR
 #define FAR
-#endif
-
-
-/* Defines the "size" of an any-size array */
-#ifndef ANYSIZE_ARRAY
-#define ANYSIZE_ARRAY 1
 #endif
 
 /* Constant modifier */
@@ -93,26 +86,22 @@
 #endif
 #endif /* NULL */
 
+/* Defines the "size" of an any-size array */
+#ifndef ANYSIZE_ARRAY
+#define ANYSIZE_ARRAY 1
+#endif
 
-//
-// FIXME
-// We should use the -fms-extensions compiler flag for gcc,
-// and clean up the mess.
-//
-#ifndef __ANONYMOUS_DEFINED
-#define __ANONYMOUS_DEFINED
-
-#ifndef NONAMELESSUNION
+/* Helper macro to enable gcc's extension.  */
+#ifndef __GNU_EXTENSION
 #ifdef __GNUC__
-#define _ANONYMOUS_UNION __GNU_EXTENSION
-#define _ANONYMOUS_STRUCT __GNU_EXTENSION
-#elif defined(__WATCOMC__) || defined(_MSC_VER)
-#define _ANONYMOUS_UNION
-#define _ANONYMOUS_STRUCT
-#endif /* __GNUC__/__WATCOMC__ */
-#endif /* NONAMELESSUNION */
+#define __GNU_EXTENSION __extension__
+#else
+#define __GNU_EXTENSION
+#endif
+#endif
 
-#ifndef _ANONYMOUS_UNION
+#ifndef DUMMYUNIONNAME
+#if defined(NONAMELESSUNION)// || !defined(_MSC_EXTENSIONS)
 #define _ANONYMOUS_UNION
 #define _UNION_NAME(x) x
 #define DUMMYUNIONNAME  u
@@ -124,7 +113,9 @@
 #define DUMMYUNIONNAME6 u6
 #define DUMMYUNIONNAME7 u7
 #define DUMMYUNIONNAME8 u8
+#define DUMMYUNIONNAME9  u9
 #else
+#define _ANONYMOUS_UNION __GNU_EXTENSION
 #define _UNION_NAME(x)
 #define DUMMYUNIONNAME
 #define DUMMYUNIONNAME1
@@ -135,9 +126,12 @@
 #define DUMMYUNIONNAME6
 #define DUMMYUNIONNAME7
 #define DUMMYUNIONNAME8
-#endif
+#define DUMMYUNIONNAME9
+#endif /* NONAMELESSUNION */
+#endif /* !DUMMYUNIONNAME */
 
-#ifndef _ANONYMOUS_STRUCT
+#ifndef DUMMYSTRUCTNAME
+#if defined(NONAMELESSUNION)// || !defined(_MSC_EXTENSIONS)
 #define _ANONYMOUS_STRUCT
 #define _STRUCT_NAME(x) x
 #define DUMMYSTRUCTNAME s
@@ -147,6 +141,7 @@
 #define DUMMYSTRUCTNAME4 s4
 #define DUMMYSTRUCTNAME5 s5
 #else
+#define _ANONYMOUS_STRUCT __GNU_EXTENSION
 #define _STRUCT_NAME(x)
 #define DUMMYSTRUCTNAME
 #define DUMMYSTRUCTNAME1
@@ -154,11 +149,14 @@
 #define DUMMYSTRUCTNAME3
 #define DUMMYSTRUCTNAME4
 #define DUMMYSTRUCTNAME5
+#endif /* NONAMELESSUNION */
+#endif /* DUMMYSTRUCTNAME */
+
+#if defined(STRICT_GS_ENABLED)
+#pragma strict_gs_check(push, on)
 #endif
 
-#endif /* __ANONYMOUS_DEFINED */
-
-#if defined(_M_MRX000) || defined(_M_ALPHA) || defined(_M_PPC) || defined(_M_IA64) || defined(_M_AMD64)
+#if defined(_M_MRX000) || defined(_M_ALPHA) || defined(_M_PPC) || defined(_M_IA64) || defined(_M_AMD64) || defined(_M_ARM)
 #define ALIGNMENT_MACHINE
 #define UNALIGNED __unaligned
 #if defined(_WIN64)
@@ -199,11 +197,11 @@
 #ifndef __GNUC__
 #define FIELD_OFFSET(Type, Field) ((LONG)(LONG_PTR)&(((Type*) 0)->Field))
 #else
-#define FIELD_OFFSET(Type, Field) __builtin_offsetof(Type, Field)
+#define FIELD_OFFSET(Type, Field) ((LONG)__builtin_offsetof(Type, Field))
 #endif
 
 /* Returns the type's alignment */
-#if defined(_MSC_VER) && (_MSC_VER >= 1300)
+#if defined(_MSC_VER)
 #define TYPE_ALIGNMENT(t) __alignof(t)
 #else
 #define TYPE_ALIGNMENT(t) FIELD_OFFSET(struct { char x; t test; }, test)
@@ -217,8 +215,14 @@
 #error "unknown architecture"
 #endif
 
+#if defined(_WIN64)
+#define PROBE_ALIGNMENT32(_s) TYPE_ALIGNMENT(ULONG)
+#endif
+
 /* Calling Conventions */
-#if defined(_M_IX86)
+#if defined(_MANAGED)
+#define FASTCALL __stdcall
+#elif defined(_M_IX86)
 #define FASTCALL __fastcall
 #else
 #define FASTCALL
@@ -234,15 +238,23 @@
 #define DECLSPEC_NORETURN __declspec(noreturn)
 
 #ifndef DECLSPEC_ADDRSAFE
-#if (_MSC_VER >= 1200) && (defined(_M_ALPHA) || defined(_M_AXP64))
+#if defined(_MSC_VER) && (defined(_M_ALPHA) || defined(_M_AXP64))
 #define DECLSPEC_ADDRSAFE  __declspec(address_safe)
 #else
 #define DECLSPEC_ADDRSAFE
 #endif
 #endif /* DECLSPEC_ADDRSAFE */
 
+#ifndef DECLSPEC_NOTHROW
+#if !defined(MIDL_PASS)
+#define DECLSPEC_NOTHROW __declspec(nothrow)
+#else
+#define DECLSPEC_NOTHROW
+#endif
+#endif
+
 #ifndef NOP_FUNCTION
-#if (_MSC_VER >= 1210)
+#if defined(_MSC_VER)
 #define NOP_FUNCTION __noop
 #else
 #define NOP_FUNCTION (void)0
@@ -263,16 +275,12 @@
 
 /* Inlines */
 #ifndef FORCEINLINE
-#if defined(_MSC_VER) && (_MSC_VER >= 1200)
+#if defined(_MSC_VER)
 #define FORCEINLINE __forceinline
-#elif defined(_MSC_VER)
-#define FORCEINLINE __inline
-#else /* __GNUC__ */
-# if ( __MINGW_GNUC_PREREQ(4, 3)  &&  __STDC_VERSION__ >= 199901L)
-#  define FORCEINLINE extern inline __attribute__((__always_inline__,__gnu_inline__))
-# else
-#  define FORCEINLINE extern __inline__ __attribute__((__always_inline__))
-# endif
+#elif ( __MINGW_GNUC_PREREQ(4, 3)  &&  __STDC_VERSION__ >= 199901L)
+# define FORCEINLINE extern inline __attribute__((__always_inline__,__gnu_inline__))
+#else
+# define FORCEINLINE extern __inline__ __attribute__((__always_inline__))
 #endif
 #endif /* FORCEINLINE */
 
@@ -287,17 +295,17 @@
 #endif /* DECLSPEC_NOINLINE */
 
 #if !defined(_M_CEE_PURE)
-#define NTAPI_INLINE    NTAPI
+#define NTAPI_INLINE NTAPI
 #else
 #define NTAPI_INLINE
 #endif
 
 /* Use to specify structure alignment */
 #ifndef DECLSPEC_ALIGN
-#if defined(_MSC_VER) && (_MSC_VER >= 1300) && !defined(MIDL_PASS)
+#if defined(_MSC_VER) && !defined(MIDL_PASS)
 #define DECLSPEC_ALIGN(x) __declspec(align(x))
 #elif defined(__GNUC__)
-#define DECLSPEC_ALIGN(x) __attribute__ ((__aligned__ (x)))
+#define DECLSPEC_ALIGN(x) __attribute__ ((__aligned__(x)))
 #else
 #define DECLSPEC_ALIGN(x)
 #endif
@@ -315,12 +323,53 @@
 #define DECLSPEC_CACHEALIGN DECLSPEC_ALIGN(SYSTEM_CACHE_ALIGNMENT_SIZE)
 #endif
 
+#ifndef DECLSPEC_UUID
+#if defined(_MSC_VER) && defined(__cplusplus)
+#define DECLSPEC_UUID(x) __declspec(uuid(x))
+#else
+#define DECLSPEC_UUID(x)
+#endif
+#endif
+
+#ifndef DECLSPEC_NOVTABLE
+#if defined(_MSC_VER) && defined(__cplusplus)
+#define DECLSPEC_NOVTABLE __declspec(novtable)
+#else
+#define DECLSPEC_NOVTABLE
+#endif
+#endif
+
 #ifndef DECLSPEC_SELECTANY
-#if (_MSC_VER >= 1100) || defined(__GNUC__)
-#define DECLSPEC_SELECTANY  __declspec(selectany)
+#if defined(_MSC_VER) || defined(__GNUC__)
+#define DECLSPEC_SELECTANY __declspec(selectany)
 #else
 #define DECLSPEC_SELECTANY
 #endif
+#endif
+
+#ifndef DECLSPEC_DEPRECATED
+#if (defined(_MSC_VER) || defined(__GNUC__)) && !defined(MIDL_PASS)
+#define DECLSPEC_DEPRECATED __declspec(deprecated)
+#define DEPRECATE_SUPPORTED
+#else
+#define DECLSPEC_DEPRECATED
+#undef  DEPRECATE_SUPPORTED
+#endif
+#endif
+
+#ifdef DEPRECATE_DDK_FUNCTIONS
+#ifdef _NTDDK_
+#define DECLSPEC_DEPRECATED_DDK DECLSPEC_DEPRECATED
+#ifdef DEPRECATE_SUPPORTED
+#define PRAGMA_DEPRECATED_DDK 1
+#endif
+#else
+#define DECLSPEC_DEPRECATED_DDK
+#define PRAGMA_DEPRECATED_DDK 1
+#endif
+#else
+#define DECLSPEC_DEPRECATED_DDK
+#define PRAGMA_DEPRECATED_DDK 0
 #endif
 
 /* Use to silence unused variable warnings when it is intentional */
@@ -347,18 +396,15 @@
 
 /* Void Pointers */
 typedef void *PVOID;
-//typedef void * POINTER_64 PVOID64;
-typedef PVOID PVOID64; // FIXME!
+typedef void * POINTER_64 PVOID64;
 
 /* Handle Type */
+typedef void *HANDLE, **PHANDLE;;
 #ifdef STRICT
-typedef void *HANDLE;
-#define DECLARE_HANDLE(n) typedef struct n##__{int i;}*n
+#define DECLARE_HANDLE(n) typedef struct n##__{int unused;} *n
 #else
-typedef PVOID HANDLE;
 #define DECLARE_HANDLE(n) typedef HANDLE n
 #endif
-typedef HANDLE *PHANDLE;
 
 /* Upper-Case Versions of Some Standard C Types */
 #ifndef VOID
@@ -370,51 +416,61 @@ typedef long LONG;
 typedef int INT;
 #endif
 #endif
-typedef double DOUBLE;
+
+/* Avoid redefinition in windef.h */
+#define BASETYPES
 
 /* Unsigned Types */
 typedef unsigned char UCHAR, *PUCHAR;
 typedef unsigned short USHORT, *PUSHORT;
 typedef unsigned long ULONG, *PULONG;
+
 typedef CONST UCHAR *PCUCHAR;
 typedef CONST USHORT *PCUSHORT;
 typedef CONST ULONG *PCULONG;
-typedef UCHAR FCHAR;
-typedef USHORT FSHORT;
-typedef ULONG FLONG;
-typedef UCHAR BOOLEAN, *PBOOLEAN;
-typedef ULONG LOGICAL;
-typedef ULONG *PLOGICAL;
+
+typedef double DOUBLE;
 
 /* Signed Types */
 typedef SHORT *PSHORT;
 typedef LONG *PLONG;
-typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
-typedef NTSTATUS *PNTSTATUS;
-typedef signed char SCHAR;
-typedef SCHAR *PSCHAR;
+
+/* Flag types */
+typedef unsigned char FCHAR;
+typedef unsigned short FSHORT;
+typedef unsigned long FLONG;
+
+typedef unsigned char BOOLEAN, *PBOOLEAN;
+typedef ULONG LOGICAL, *PLOGICAL;
+typedef _Return_type_success_(return >= 0) LONG NTSTATUS, *PNTSTATUS;;
+typedef signed char SCHAR, *PSCHAR;
 
 #ifndef _HRESULT_DEFINED
 #define _HRESULT_DEFINED
-typedef LONG HRESULT;
+typedef _Return_type_success_(return >= 0) LONG HRESULT;
 #endif
 
 /* 64-bit types */
+#define _ULONGLONG_
 __GNU_EXTENSION typedef __int64 LONGLONG, *PLONGLONG;
 __GNU_EXTENSION typedef unsigned __int64 ULONGLONG, *PULONGLONG;
+#define _DWORDLONG_
 typedef ULONGLONG DWORDLONG, *PDWORDLONG;
 
 /* Update Sequence Number */
 typedef LONGLONG USN;
 
 /* ANSI (Multi-byte Character) types */
-typedef CHAR *PCHAR, *LPCH, *PCH;
-typedef CONST CHAR *LPCCH, *PCCH;
+typedef CHAR *PCHAR, *LPCH, *PCH, *PNZCH;
+typedef CONST CHAR *LPCCH, *PCCH, *PCNZCH;
 typedef _Null_terminated_ CHAR *NPSTR, *LPSTR, *PSTR;
 typedef _Null_terminated_ PSTR *PZPSTR;
 typedef _Null_terminated_ CONST PSTR *PCZPSTR;
 typedef _Null_terminated_ CONST CHAR *LPCSTR, *PCSTR;
 typedef _Null_terminated_ PCSTR *PZPCSTR;
+
+typedef _NullNull_terminated_ CHAR *PZZSTR;
+typedef _NullNull_terminated_ CONST CHAR *PCZZSTR;
 
 /* Pointer to an Asciiz string */
 typedef _Null_terminated_ CHAR *PSZ;
@@ -431,22 +487,93 @@ typedef _Null_terminated_ WCHAR UNALIGNED *LPUWSTR, *PUWSTR;
 typedef _Null_terminated_ CONST WCHAR *LPCWSTR, *PCWSTR;
 typedef _Null_terminated_ PCWSTR *PZPCWSTR;
 typedef _Null_terminated_ CONST WCHAR UNALIGNED *LPCUWSTR, *PCUWSTR;
+
 typedef _NullNull_terminated_ WCHAR *PZZWSTR;
+typedef _NullNull_terminated_ CONST WCHAR *PCZZWSTR;
+typedef _NullNull_terminated_ WCHAR UNALIGNED *PUZZWSTR;
+typedef _NullNull_terminated_ CONST WCHAR UNALIGNED *PCUZZWSTR;
+
+typedef  WCHAR *PNZWCH;
+typedef  CONST WCHAR *PCNZWCH;
+typedef  WCHAR UNALIGNED *PUNZWCH;
+typedef  CONST WCHAR UNALIGNED *PCUNZWCH;
+
+#if (_WIN32_WINNT >= 0x0600) || (defined(__cplusplus) && defined(WINDOWS_ENABLE_CPLUSPLUS))
+typedef CONST WCHAR *LPCWCHAR, *PCWCHAR;
+typedef CONST WCHAR UNALIGNED *LPCUWCHAR, *PCUWCHAR;
+typedef unsigned long UCSCHAR, *PUCSCHAR, *PUCSSTR;
+typedef const UCSCHAR *PCUCSCHAR, *PCUCSSTR;
+typedef UCSCHAR UNALIGNED *PUUCSCHAR, *PUUCSSTR;
+typedef const UCSCHAR UNALIGNED *PCUUCSCHAR, *PCUUCSSTR;
+#define UCSCHAR_INVALID_CHARACTER (0xffffffff)
+#define MIN_UCSCHAR (0)
+#define MAX_UCSCHAR (0x0010FFFF)
+#endif /* _WIN32_WINNT >= 0x0600 */
+
+#ifdef  UNICODE
+
+#ifndef _TCHAR_DEFINED
+typedef WCHAR TCHAR, *PTCHAR;
+typedef WCHAR TUCHAR, *PTUCHAR;
+#define _TCHAR_DEFINED
+#endif /* !_TCHAR_DEFINED */
+typedef LPWCH LPTCH, PTCH;
+typedef LPCWCH LPCTCH, PCTCH;
+typedef LPWSTR PTSTR, LPTSTR;
+typedef LPCWSTR PCTSTR, LPCTSTR;
+typedef LPUWSTR PUTSTR, LPUTSTR;
+typedef LPCUWSTR PCUTSTR, LPCUTSTR;
+typedef LPWSTR LP;
+typedef PZZWSTR PZZTSTR;
+typedef PCZZWSTR PCZZTSTR;
+typedef PUZZWSTR PUZZTSTR;
+typedef PCUZZWSTR PCUZZTSTR;
+typedef PZPWSTR PZPTSTR;
+typedef PNZWCH PNZTCH;
+typedef PCNZWCH PCNZTCH;
+typedef PUNZWCH PUNZTCH;
+typedef PCUNZWCH PCUNZTCH;
+#define __TEXT(quote) L##quote
+
+#else /* UNICODE */
+
+#ifndef _TCHAR_DEFINED
+typedef char TCHAR, *PTCHAR;
+typedef unsigned char TUCHAR, *PTUCHAR;
+#define _TCHAR_DEFINED
+#endif /* !_TCHAR_DEFINED */
+typedef LPCH LPTCH, PTCH;
+typedef LPCCH LPCTCH, PCTCH;
+typedef LPSTR PTSTR, LPTSTR, PUTSTR, LPUTSTR;
+typedef LPCSTR PCTSTR, LPCTSTR, PCUTSTR, LPCUTSTR;
+typedef PZZSTR PZZTSTR, PUZZTSTR;
+typedef PCZZSTR PCZZTSTR, PCUZZTSTR;
+typedef PZPSTR PZPTSTR;
+typedef PNZCH PNZTCH, PUNZTCH;
+typedef PCNZCH PCNZTCH, PCUNZTCH;
+#define __TEXT(quote) quote         // r_winnt
+
+#endif /* UNICODE */                // r_winnt
+#define TEXT(quote) __TEXT(quote)   // r_winnt
 
 /* Cardinal Data Types */
-typedef char CCHAR, *PCCHAR;
+typedef char CCHAR;
+typedef CCHAR *PCCHAR;
 typedef short CSHORT, *PCSHORT;
 typedef ULONG CLONG, *PCLONG;
 
 /* NLS basics (Locale and Language Ids) */
-typedef ULONG LCID;
-typedef PULONG PLCID;
-typedef USHORT LANGID;
+typedef unsigned long LCID, *PLCID;
+typedef unsigned short LANGID;
 
-typedef enum {
-  UNSPECIFIED_COMPARTMENT_ID = 0,
-  DEFAULT_COMPARTMENT_ID
+#ifndef __COMPARTMENT_ID_DEFINED__
+#define __COMPARTMENT_ID_DEFINED__
+typedef enum
+{
+    UNSPECIFIED_COMPARTMENT_ID = 0,
+    DEFAULT_COMPARTMENT_ID
 } COMPARTMENT_ID, *PCOMPARTMENT_ID;
+#endif /* __COMPARTMENT_ID_DEFINED__ */
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -522,9 +649,14 @@ typedef struct _LUID {
 typedef struct _UNICODE_STRING {
   USHORT Length;
   USHORT MaximumLength;
-  PWSTR  Buffer;
+#ifdef MIDL_PASS
+  [size_is(MaximumLength / 2), length_is((Length) / 2)] PUSHORT Buffer;
+#else
+  _Field_size_bytes_part_(MaximumLength, Length) PWCH Buffer;
+#endif
 } UNICODE_STRING, *PUNICODE_STRING;
 typedef const UNICODE_STRING* PCUNICODE_STRING;
+
 #define UNICODE_NULL ((WCHAR)0)
 #define UNICODE_STRING_MAX_BYTES ((USHORT) 65534)
 #define UNICODE_STRING_MAX_CHARS (32767)
@@ -585,6 +717,7 @@ typedef struct _STRING64 {
 #define SORTIDFROMLCID(lcid)   ((USHORT)((((ULONG)(lcid)) >> 16) & 0xf))
 #define SORTVERSIONFROMLCID(lcid)  ((USHORT)((((ULONG)(lcid)) >> 20) & 0xf))
 
+#define LOCALE_NAME_MAX_LENGTH   85
 
 /* Object Attributes */
 typedef struct _OBJECT_ATTRIBUTES {
@@ -597,26 +730,58 @@ typedef struct _OBJECT_ATTRIBUTES {
 } OBJECT_ATTRIBUTES, *POBJECT_ATTRIBUTES;
 typedef CONST OBJECT_ATTRIBUTES *PCOBJECT_ATTRIBUTES;
 
+typedef struct _OBJECT_ATTRIBUTES32 {
+  ULONG Length;
+  ULONG RootDirectory;
+  ULONG ObjectName;
+  ULONG Attributes;
+  ULONG SecurityDescriptor;
+  ULONG SecurityQualityOfService;
+} OBJECT_ATTRIBUTES32, *POBJECT_ATTRIBUTES32;
+typedef CONST OBJECT_ATTRIBUTES32 *PCOBJECT_ATTRIBUTES32;
+
+typedef struct _OBJECT_ATTRIBUTES64 {
+  ULONG Length;
+  ULONG64 RootDirectory;
+  ULONG64 ObjectName;
+  ULONG Attributes;
+  ULONG64 SecurityDescriptor;
+  ULONG64 SecurityQualityOfService;
+} OBJECT_ATTRIBUTES64, *POBJECT_ATTRIBUTES64;
+typedef CONST OBJECT_ATTRIBUTES64 *PCOBJECT_ATTRIBUTES64;
+
 /* Values for the Attributes member */
-#define OBJ_INHERIT             0x00000002
-#define OBJ_PERMANENT           0x00000010
-#define OBJ_EXCLUSIVE           0x00000020
-#define OBJ_CASE_INSENSITIVE    0x00000040
-#define OBJ_OPENIF              0x00000080
-#define OBJ_OPENLINK            0x00000100
-#define OBJ_KERNEL_HANDLE       0x00000200
-#define OBJ_FORCE_ACCESS_CHECK  0x00000400
-#define OBJ_VALID_ATTRIBUTES    0x000007F2
+#define OBJ_INHERIT             0x00000002L
+#define OBJ_PERMANENT           0x00000010L
+#define OBJ_EXCLUSIVE           0x00000020L
+#define OBJ_CASE_INSENSITIVE    0x00000040L
+#define OBJ_OPENIF              0x00000080L
+#define OBJ_OPENLINK            0x00000100L
+#define OBJ_KERNEL_HANDLE       0x00000200L
+#define OBJ_FORCE_ACCESS_CHECK  0x00000400L
+#define OBJ_VALID_ATTRIBUTES    0x000007F2L
 
 /* Helper Macro */
 #define InitializeObjectAttributes(p,n,a,r,s) { \
   (p)->Length = sizeof(OBJECT_ATTRIBUTES); \
   (p)->RootDirectory = (r); \
-  (p)->Attributes = (a); \
   (p)->ObjectName = (n); \
+  (p)->Attributes = (a); \
   (p)->SecurityDescriptor = (s); \
   (p)->SecurityQualityOfService = NULL; \
 }
+
+#define RTL_CONSTANT_OBJECT_ATTRIBUTES(n,a) { \
+  sizeof(OBJECT_ATTRIBUTES), \
+  NULL, \
+  RTL_CONST_CAST(PUNICODE_STRING)(n), \
+  a, \
+  NULL, \
+  NULL  \
+}
+
+#define RTL_INIT_OBJECT_ATTRIBUTES(n, a) \
+    RTL_CONSTANT_OBJECT_ATTRIBUTES(n, a)
 
 /* Product Types */
 typedef enum _NT_PRODUCT_TYPE {
@@ -661,23 +826,28 @@ typedef struct _SINGLE_LIST_ENTRY {
   struct _SINGLE_LIST_ENTRY *Next;
 } SINGLE_LIST_ENTRY, *PSINGLE_LIST_ENTRY;
 
+typedef struct _SINGLE_LIST_ENTRY32 {
+    ULONG Next;
+} SINGLE_LIST_ENTRY32, *PSINGLE_LIST_ENTRY32;
+
 typedef struct _PROCESSOR_NUMBER {
   USHORT Group;
   UCHAR Number;
   UCHAR Reserved;
 } PROCESSOR_NUMBER, *PPROCESSOR_NUMBER;
 
-struct _CONTEXT;
-struct _EXCEPTION_RECORD;
-
 _IRQL_requires_same_
 _Function_class_(EXCEPTION_ROUTINE)
-typedef EXCEPTION_DISPOSITION
-(NTAPI *PEXCEPTION_ROUTINE)(
+typedef
+EXCEPTION_DISPOSITION
+NTAPI
+EXCEPTION_ROUTINE(
     _Inout_ struct _EXCEPTION_RECORD *ExceptionRecord,
     _In_ PVOID EstablisherFrame,
     _Inout_ struct _CONTEXT *ContextRecord,
     _In_ PVOID DispatcherContext);
+
+typedef EXCEPTION_ROUTINE *PEXCEPTION_ROUTINE;
 
 typedef struct _GROUP_AFFINITY {
   KAFFINITY Mask;
@@ -691,7 +861,22 @@ typedef struct _GROUP_AFFINITY {
 #define RTL_BITS_OF(sizeOfArg)         (sizeof(sizeOfArg) * 8)
 #define RTL_BITS_OF_FIELD(type, field) (RTL_BITS_OF(RTL_FIELD_TYPE(type, field)))
 
-#define RTL_CONSTANT_STRING(s) { sizeof(s)-sizeof((s)[0]), sizeof(s), s }
+#ifdef __cplusplus
+extern "C++" template<typename _Type> struct _RTL_remove_const_template;
+extern "C++" template<typename _Type> struct _RTL_remove_const_template<const _Type&> { typedef _Type type; };
+#define _RTL_CONSTANT_STRING_remove_const_macro(s) \
+    (const_cast<_RTL_remove_const_template<decltype((s)[0])>::type*>(s))
+extern "C++" template<class _Ty> struct _RTL_CONSTANT_STRING_type_check_template;
+extern "C++" template<class _Ty, int _Count>	struct _RTL_CONSTANT_STRING_type_check_template<const _Ty (&)[_Count]> { typedef char type; };
+#define _RTL_CONSTANT_STRING_type_check(s) _RTL_CONSTANT_STRING_type_check_template<decltype(s)>::type
+#else
+#define _RTL_CONSTANT_STRING_remove_const_macro(s) (s)
+char _RTL_CONSTANT_STRING_type_check(const void *s);
+#endif
+#define RTL_CONSTANT_STRING(s) { \
+    sizeof(s)-sizeof((s)[0]), \
+    sizeof(s) / sizeof(_RTL_CONSTANT_STRING_type_check(s)), \
+    _RTL_CONSTANT_STRING_remove_const_macro(s) }
 
 #define RTL_FIELD_SIZE(type, field) (sizeof(((type *)0)->field))
 
@@ -702,13 +887,23 @@ typedef struct _GROUP_AFFINITY {
     ( (((PCHAR)(&(Struct)->Field)) + sizeof((Struct)->Field)) <= (((PCHAR)(Struct))+(Size)) )
 
 #define RTL_NUMBER_OF_V1(A) (sizeof(A)/sizeof((A)[0]))
+
+#ifdef __GNUC__
+#define RTL_NUMBER_OF_V2(A) \
+    (({ int _check_array_type[__builtin_types_compatible_p(typeof(A), typeof(&A[0])) ? -1 : 1]; (void)_check_array_type; }), \
+    RTL_NUMBER_OF_V1(A))
+#else
+/// \todo implement security checks for cplusplus / MSVC
 #define RTL_NUMBER_OF_V2(A) RTL_NUMBER_OF_V1(A)
+#endif
+
 #ifdef ENABLE_RTL_NUMBER_OF_V2
 #define RTL_NUMBER_OF(A) RTL_NUMBER_OF_V2(A)
 #else
 #define RTL_NUMBER_OF(A) RTL_NUMBER_OF_V1(A)
 #endif
 #define ARRAYSIZE(A)    RTL_NUMBER_OF_V2(A)
+#define _ARRAYSIZE(A)   RTL_NUMBER_OF_V1(A)
 
 /* Type Limits */
 #define MINCHAR   0x80
@@ -722,18 +917,28 @@ typedef struct _GROUP_AFFINITY {
 #define MAXULONG  0xffffffff
 #define MAXLONGLONG (0x7fffffffffffffffLL)
 
-/* Multiplication and Shift Operations */
-#define Int32x32To64(a,b) ((LONGLONG)(a)*(LONGLONG)(b))
-#define UInt32x32To64(a,b) ((DWORDLONG)(a)*(DWORDLONG)(b))
-#define Int64ShllMod32(a,b) ((DWORDLONG)(a)<<(b))
-#define Int64ShraMod32(a,b) ((LONGLONG)(a)>>(b))
-#define Int64ShrlMod32(a,b) ((DWORDLONG)(a)>>(b))
+/* Multiplication and Shift Operations. Note: we don't use inline
+   asm functions, the compiler can optimize this better. */
+#define Int32x32To64(a,b) (((__int64)(long)(a))*((__int64)(long)(b)))
+#define UInt32x32To64(a,b) ((unsigned __int64)(unsigned int)(a)*(unsigned __int64)(unsigned int)(b))
+
+#if defined(MIDL_PASS)|| defined(RC_INVOKED) || defined(_M_CEE_PURE)
+/* Use native math */
+#define Int64ShllMod32(a,b) ((unsigned __int64)(a)<<(b))
+#define Int64ShraMod32(a,b) (((__int64)(a))>>(b))
+#define Int64ShrlMod32(a,b) (((unsigned __int64)(a))>>(b))
+#else
+/* Use intrinsics */
+#define Int64ShllMod32(a,b) __ll_lshift(a,b)
+#define Int64ShraMod32(a,b) __ll_rshift(a,b)
+#define Int64ShrlMod32(a,b) __ull_rshift(a,b)
+#endif
 
 /* C_ASSERT Definition */
 #define C_ASSERT(expr) extern char (*c_assert(void)) [(expr) ? 1 : -1]
 
 /* Eliminate Microsoft C/C++ compiler warning 4715 */
-#if defined(_MSC_VER) && (_MSC_VER > 1200)
+#if defined(_MSC_VER)
 # define DEFAULT_UNREACHABLE default: __assume(0)
 #elif defined(__clang__) || (defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 5))))
 # define DEFAULT_UNREACHABLE default: __builtin_unreachable()
@@ -772,6 +977,8 @@ typedef struct _GROUP_AFFINITY {
 #define LANG_ARMENIAN                             0x2b
 #define LANG_ASSAMESE                             0x4d
 #define LANG_AZERI                                0x2c
+#define LANG_AZERBAIJANI                          0x2c
+#define LANG_BANGLA                               0x45
 #define LANG_BASHKIR                              0x6d
 #define LANG_BASQUE                               0x2d
 #define LANG_BELARUSIAN                           0x23
@@ -781,6 +988,8 @@ typedef struct _GROUP_AFFINITY {
 #define LANG_BOSNIAN_NEUTRAL                    0x781a
 #define LANG_BULGARIAN                            0x02
 #define LANG_CATALAN                              0x03
+#define LANG_CENTRAL_KURDISH                      0x92
+#define LANG_CHEROKEE                             0x5c
 #define LANG_CHINESE                              0x04
 #define LANG_CHINESE_SIMPLIFIED                   0x04
 #define LANG_CHINESE_TRADITIONAL                0x7c04
@@ -799,6 +1008,7 @@ typedef struct _GROUP_AFFINITY {
 #define LANG_FINNISH                              0x0b
 #define LANG_FRENCH                               0x0c
 #define LANG_FRISIAN                              0x62
+#define LANG_FULAH                                0x67
 #define LANG_GALICIAN                             0x56
 #define LANG_GEORGIAN                             0x37
 #define LANG_GERMAN                               0x07
@@ -806,6 +1016,7 @@ typedef struct _GROUP_AFFINITY {
 #define LANG_GREENLANDIC                          0x6f
 #define LANG_GUJARATI                             0x47
 #define LANG_HAUSA                                0x68
+#define LANG_HAWAIIAN                             0x75
 #define LANG_HEBREW                               0x0d
 #define LANG_HINDI                                0x39
 #define LANG_HUNGARIAN                            0x0e
@@ -843,18 +1054,22 @@ typedef struct _GROUP_AFFINITY {
 #define LANG_NEPALI                               0x61
 #define LANG_NORWEGIAN                            0x14
 #define LANG_OCCITAN                              0x82
+#define LANG_ODIA                                 0x48
 #define LANG_ORIYA                                0x48
 #define LANG_PASHTO                               0x63
 #define LANG_PERSIAN                              0x29
 #define LANG_POLISH                               0x15
 #define LANG_PORTUGUESE                           0x16
+#define LANG_PULAR                                0x67
 #define LANG_PUNJABI                              0x46
 #define LANG_QUECHUA                              0x6b
 #define LANG_ROMANIAN                             0x18
 #define LANG_ROMANSH                              0x17
 #define LANG_RUSSIAN                              0x19
+#define LANG_SAKHA                                0x85
 #define LANG_SAMI                                 0x3b
 #define LANG_SANSKRIT                             0x4f
+#define LANG_SCOTTISH_GAELIC                      0x91
 #define LANG_SERBIAN                              0x1a
 #define LANG_SERBIAN_NEUTRAL                    0x7c1a
 #define LANG_SINDHI                               0x59
@@ -874,6 +1089,7 @@ typedef struct _GROUP_AFFINITY {
 #define LANG_THAI                                 0x1e
 #define LANG_TIBETAN                              0x51
 #define LANG_TIGRIGNA                             0x73
+#define LANG_TIGRINYA                             0x73
 #define LANG_TSWANA                               0x32
 #define LANG_TURKISH                              0x1f
 #define LANG_TURKMEN                              0x42
@@ -882,6 +1098,7 @@ typedef struct _GROUP_AFFINITY {
 #define LANG_UPPER_SORBIAN                        0x2e
 #define LANG_URDU                                 0x20
 #define LANG_UZBEK                                0x43
+#define LANG_VALENCIAN                            0x03
 #define LANG_VIETNAMESE                           0x2a
 #define LANG_WELSH                                0x52
 #define LANG_WOLOF                                0x88
@@ -890,5 +1107,9 @@ typedef struct _GROUP_AFFINITY {
 #define LANG_YI                                   0x78
 #define LANG_YORUBA                               0x6a
 #define LANG_ZULU                                 0x35
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* _NTDEF_ */

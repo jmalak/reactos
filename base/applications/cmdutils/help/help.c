@@ -25,7 +25,8 @@ BOOL IsConsoleHandle(HANDLE hHandle)
     DWORD dwMode;
 
     /* Check whether the handle may be that of a console... */
-    if ((GetFileType(hHandle) & FILE_TYPE_CHAR) == 0) return FALSE;
+    if ((GetFileType(hHandle) & ~FILE_TYPE_REMOTE) != FILE_TYPE_CHAR)
+        return FALSE;
 
     /*
      * It may be. Perform another test... The idea comes from the
@@ -55,7 +56,7 @@ VOID PrintResourceString(INT resID, ...)
     // FIXME: Optimize by using Win32 console functions.
     if (IsConsoleHandle(OutputHandle))
     {
-        _vcwprintf(tmpBuffer, arg_ptr);
+        vfwprintf(stdout, tmpBuffer, arg_ptr);
     }
     else
     {

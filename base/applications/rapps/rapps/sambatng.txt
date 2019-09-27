@@ -1,4 +1,5 @@
-﻿; UTF-8
+; UTF-8
+; Turkish translation by Erdem Ersoy (eersoy93) (erdemersoy@live.com)
 
 [Section]
 Name = Samba TNG
@@ -22,7 +23,7 @@ Description = Cet outil vous permet d'accéder à vos répertoire/imprimantes pa
 Size = 2,13 Mo
 
 [Section.0410]
-Description = Questo strumento consente di accedere alle cartelle condivise di Windows / stampanti con ReactOS.
+Description = Questo strumento consente di accedere alle cartelle/stampanti condivise di Windows con ReactOS.
 
 [Section.0413]
 Description = Maakt het mogelijk om Windows gedeelde printers te gebruiken met ReactOS.
@@ -35,7 +36,7 @@ Description = Acest instrument permite accesarea în ReactOS a dosarelor/imprima
 Size = 2,13 Mo
 
 [Section.041f]
-Description = Bu araç, ReactOS'ta Pencereler'in paylaşılan yazıcılarıyla paylaşılan dizinlerine erişimi sağlar.
+Description = Bu araç, size, ReactOS'la Windows paylaşılan dizinlerinize ve paylaşılan yazıcılarınıza erişime olanak sağlar.
 Size = 2,13 MB
 
 [Section.0422]

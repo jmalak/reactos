@@ -13,11 +13,11 @@
 
 #include FT_GLYPH_H
 #include FT_TYPE1_TABLES_H
-#include <freetype/tttables.h>
-#include <freetype/fttrigon.h>
-#include <freetype/ftbitmap.h>
-#include <freetype/ftoutln.h>
-#include <freetype/ftwinfnt.h>
+#include <tttables.h>
+#include <fttrigon.h>
+#include <ftbitmap.h>
+#include <ftoutln.h>
+#include <ftwinfnt.h>
 
 #define NDEBUG
 #include <debug.h>
@@ -533,19 +533,19 @@ IntTranslateCharsetInfo(PDWORD Src, /* [in]
     switch (Flags)
     {
     case TCI_SRCFONTSIG:
-        while (0 == (*Src >> Index & 0x0001) && Index < MAXTCIINDEX)
+        while (Index < MAXTCIINDEX && 0 == (*Src >> Index & 0x0001))
         {
             Index++;
         }
         break;
     case TCI_SRCCODEPAGE:
-        while ( *Src != FontTci[Index].ciACP && Index < MAXTCIINDEX)
+        while (Index < MAXTCIINDEX && *Src != FontTci[Index].ciACP)
         {
             Index++;
         }
         break;
     case TCI_SRCCHARSET:
-        while ( *Src != FontTci[Index].ciCharset && Index < MAXTCIINDEX)
+        while (Index < MAXTCIINDEX && *Src != FontTci[Index].ciCharset)
         {
             Index++;
         }
@@ -3162,8 +3162,8 @@ NtGdiGetFontFamilyInfo(HDC Dc,
     return Count;
 }
 
-LONG
 FORCEINLINE
+LONG
 ScaleLong(LONG lValue, PFLOATOBJ pef)
 {
     FLOATOBJ efTemp;
@@ -3533,6 +3533,7 @@ GreExtTextOutW(
             {
                 DPRINT1("Failed to load and render glyph! [index: %d]\n", glyph_index);
                 IntUnLockFreeType;
+                DC_vFinishBlit(dc, NULL);
                 goto fail2;
             }
             glyph = face->glyph;
@@ -3546,6 +3547,7 @@ GreExtTextOutW(
             {
                 DPRINT1("Failed to render glyph! [index: %d]\n", glyph_index);
                 IntUnLockFreeType;
+                DC_vFinishBlit(dc, NULL);
                 goto fail2;
             }
         }
@@ -3609,6 +3611,7 @@ GreExtTextOutW(
             DPRINT1("WARNING: EngLockSurface() failed!\n");
             // FT_Done_Glyph(realglyph);
             IntUnLockFreeType;
+            DC_vFinishBlit(dc, NULL);
             goto fail2;
         }
         SourceGlyphSurf = EngLockSurface((HSURF)HSourceGlyph);
@@ -3617,6 +3620,7 @@ GreExtTextOutW(
             EngDeleteSurface((HSURF)HSourceGlyph);
             DPRINT1("WARNING: EngLockSurface() failed!\n");
             IntUnLockFreeType;
+            DC_vFinishBlit(dc, NULL);
             goto fail2;
         }
 

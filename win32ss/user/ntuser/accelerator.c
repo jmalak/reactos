@@ -50,8 +50,7 @@ co_IntTranslateAccelerator(
     UINT Mask = 0, nPos;
     HWND hWnd;
     HMENU hMenu, hSubMenu;
-    PMENU_OBJECT MenuObject, SubMenu;
-    PMENU_ITEM MenuItem;
+    PMENU MenuObject;
 
     ASSERT_REFS_CO(Window);
 
@@ -100,17 +99,12 @@ co_IntTranslateAccelerator(
     /* Check if accelerator is associated with menu command */
     hMenu = (Window->style & WS_CHILD) ? 0 : (HMENU)Window->IDMenu;
     hSubMenu = NULL;
-    MenuObject = IntGetMenuObject(hMenu);
+    MenuObject = UserGetMenuObject(hMenu);
+    nPos = pAccel->cmd;
     if (MenuObject)
     {
-        nPos = IntGetMenuItemByFlag(MenuObject,
-                                    pAccel->cmd,
-                                    MF_BYCOMMAND,
-                                    &SubMenu,
-                                    &MenuItem,
-                                    NULL);
-        if (nPos != (UINT) - 1)
-            hSubMenu = SubMenu->head.h;
+        if ((MENU_FindItem (&MenuObject, &nPos, MF_BYPOSITION)))
+            hSubMenu = MenuObject->head.h;
         else
             hMenu = NULL;
     }
@@ -119,17 +113,12 @@ co_IntTranslateAccelerator(
         /* Check system menu now */
         hMenu = Window->SystemMenu;
         hSubMenu = hMenu; /* system menu is a popup menu */
-        MenuObject = IntGetMenuObject(hMenu);
+        MenuObject = UserGetMenuObject(hMenu);
+        nPos = pAccel->cmd;
         if (MenuObject)
         {
-            nPos = IntGetMenuItemByFlag(MenuObject,
-                                        pAccel->cmd,
-                                        MF_BYCOMMAND,
-                                        &SubMenu,
-                                        &MenuItem,
-                                        NULL);
-            if (nPos != (UINT) - 1)
-                hSubMenu = SubMenu->head.h;
+            if ((MENU_FindItem (&MenuObject, &nPos, MF_BYPOSITION)))
+                hSubMenu = MenuObject->head.h;
             else
                 hMenu = NULL;
         }

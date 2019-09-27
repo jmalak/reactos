@@ -261,8 +261,8 @@ HRESULT STDMETHODCALLTYPE CDesktopBrowser::TranslateAcceleratorSB(LPMSG lpmsg, W
 
 HRESULT STDMETHODCALLTYPE CDesktopBrowser::BrowseObject(LPCITEMIDLIST pidl, UINT wFlags)
 {
-    /* 
-     * We should use IShellWindows interface here in order to attempt to 
+    /*
+     * We should use IShellWindows interface here in order to attempt to
      * find an open shell window that shows the requested pidl and activate it
      */
 
@@ -389,8 +389,7 @@ LRESULT CALLBACK CDesktopBrowser::ProgmanWindowProc(IN HWND hwnd, IN UINT uMsg, 
 
     if (uMsg != WM_NCCREATE)
     {
-        pThis = (CDesktopBrowser*)GetWindowLongPtrW(hwnd,
-                                          0);
+        pThis = reinterpret_cast<CDesktopBrowser *>(GetWindowLongPtrW(hwnd, 0));
         if (pThis == NULL)
             goto DefMsgHandler;
     }
@@ -423,6 +422,7 @@ LRESULT CALLBACK CDesktopBrowser::ProgmanWindowProc(IN HWND hwnd, IN UINT uMsg, 
                     rcDesktop.bottom = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
                     /* FIXME: Update work area */
+                    DBG_UNREFERENCED_LOCAL_VARIABLE(rcDesktop);
                 }
                 break;
 
@@ -554,7 +554,7 @@ HANDLE WINAPI SHCreateDesktop(IShellDesktopTray *ShellDesk)
  */
 BOOL WINAPI SHDesktopMessageLoop(HANDLE hDesktop)
 {
-    CDesktopBrowser *Desk = (CDesktopBrowser *)hDesktop;
+    CDesktopBrowser *Desk = static_cast<CDesktopBrowser *>(hDesktop);
 
     if (Desk == NULL || Desk->Tag != SHDESK_TAG)
     {

@@ -117,12 +117,12 @@ PALETTE_vGetBitMasks(
     PPALETTE ppal,
     PULONG pulColors);
 
-BOOL
+VOID
 NTAPI
-PALETTE_Cleanup(PVOID ObjectBody);
+PALETTE_vCleanup(PVOID ObjectBody);
 
-ULONG
 FORCEINLINE
+ULONG
 CalculateShift(ULONG ulMask1, ULONG ulMask2)
 {
     ULONG ulShift1, ulShift2;

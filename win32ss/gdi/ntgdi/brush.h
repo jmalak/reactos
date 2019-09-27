@@ -94,7 +94,7 @@ typedef struct _EBRUSHOBJ
 #define  BRUSH_ShareUnlockBrush(pBrush) GDIOBJ_vDereferenceObject((POBJ)pBrush)
 
 INT FASTCALL BRUSH_GetObject (PBRUSH GdiObject, INT Count, LPLOGBRUSH Buffer);
-BOOL NTAPI BRUSH_Cleanup(PVOID ObjectBody);
+VOID NTAPI BRUSH_vCleanup(PVOID ObjectBody);
 
 extern HSURF gahsurfHatch[HS_DDI_MAX];
 
@@ -142,8 +142,8 @@ EBRUSHOBJ_psoPattern(EBRUSHOBJ *pebo);
 #define BRUSHOBJ_psoPattern(pbo) \
     EBRUSHOBJ_psoPattern(CONTAINING_RECORD(pbo, EBRUSHOBJ, BrushObject))
 
-ULONG
 FORCEINLINE
+ULONG
 EBRUSHOBJ_iSetSolidColor(EBRUSHOBJ *pebo, ULONG iSolidColor)
 {
     ULONG iOldColor = pebo->BrushObject.iSolidColor;

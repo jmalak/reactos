@@ -58,6 +58,7 @@ list(APPEND SOURCE
     windows/text.c
     windows/window.c
     windows/winpos.c
+    ${CMAKE_CURRENT_BINARY_DIR}/user32_stubs.c
     include/user32.h)
 
 if(USE_NEW_CURSORICON)
@@ -71,7 +72,7 @@ add_library(user32 SHARED
     user32.rc
     ${CMAKE_CURRENT_BINARY_DIR}/user32.def)
 
-set_module_type(user32 win32dll ENTRYPOINT DllMain 12 UNICODE)
+set_module_type(user32 win32dll ENTRYPOINT DllMain 12 UNICODE HOTPATCHABLE)
 target_link_libraries(user32 user32_wsprintf wine win32ksys ${PSEH_LIB})
 
 if(MSVC)
